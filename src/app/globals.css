@@ -47,6 +47,15 @@ body {
   }
 }
 
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);

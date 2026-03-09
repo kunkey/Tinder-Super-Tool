@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const util = require('util');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -69,6 +70,38 @@ app.prepare().then(() => {
 
     let lastSocket = null;
 
+    // --- Stream server stdout (console.*) to clients via websocket ---
+    const MAX_SERVER_LOGS = 800;
+    const serverLogBuffer = [];
+    const originalConsole = {
+        log: console.log.bind(console),
+        info: console.info.bind(console),
+        warn: console.warn.bind(console),
+        error: console.error.bind(console),
+        debug: (console.debug ? console.debug.bind(console) : console.log.bind(console)),
+    };
+
+    const pushServerLog = (level, args) => {
+        try {
+            const text = util.format.apply(null, args);
+            const payload = { ts: Date.now(), level, text };
+            serverLogBuffer.push(payload);
+            if (serverLogBuffer.length > MAX_SERVER_LOGS) serverLogBuffer.splice(0, serverLogBuffer.length - MAX_SERVER_LOGS);
+            io.emit('server-log', payload);
+        } catch (e) {
+            // ignore stream errors
+        }
+    };
+
+    const patchConsole = (level) => {
+        console[level] = (...args) => {
+            try { originalConsole[level](...args); } catch { /* ignore */ }
+            pushServerLog(level, args);
+        };
+    };
+
+    ['log', 'info', 'warn', 'error', 'debug'].forEach(patchConsole);
+
     const sendRealtimeData = async (socket) => {
         try {
             const auth = readConfig('auth.json');
@@ -118,6 +151,11 @@ app.prepare().then(() => {
     io.on('connection', (socket) => {
         lastSocket = socket;
         console.log('Client connected');
+
+        // Send recent server logs on connect
+        if (serverLogBuffer.length > 0) {
+            socket.emit('server-log-batch', serverLogBuffer);
+        }
         
         sendRealtimeData(socket).catch(err => {
             console.error('Lỗi khi gửi realtime data ban đầu:', err.message);

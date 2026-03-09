@@ -6,6 +6,9 @@ import ConfigModal from '@/components/ConfigModal';
 import ChatModal from '@/components/ChatModal';
 import MyProfileModal from '@/components/MyProfileModal';
 import GuideModal from '@/components/GuideModal';
+import LogModal from '@/components/LogModal';
+import { installConsoleCapture } from '@/libs/consoleCapture';
+import { installServerLogStream } from '@/libs/serverLogStream';
 
 type FeedMode = 'recommend' | 'my_likes' | 'fast_match';
 
@@ -57,6 +60,7 @@ export default function Home() {
   const [showConfig, setShowConfig] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showLog, setShowLog] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -71,6 +75,11 @@ export default function Home() {
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
   const feedApiUrl = feedMode === 'my_likes' ? '/api/my-likes' : feedMode === 'fast_match' ? '/api/fast-match' : '/api/recommendations';
+
+  useEffect(() => {
+    installConsoleCapture();
+    installServerLogStream();
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setShowBackToTop(window.scrollY > 300);
@@ -337,6 +346,19 @@ export default function Home() {
             </div>
           </div>
 
+          <button
+            type="button"
+            onClick={() => setShowLog(true)}
+            className="fixed bottom-10 left-8 z-50 px-5 py-3 rounded-2xl bg-white/25 hover:bg-white/40 text-white font-extrabold shadow-2xl border-2 border-white/50 backdrop-blur-md transition-all duration-300 hover:scale-105 flex items-center gap-2 cursor-pointer"
+            title="Xem log console"
+            aria-label="Xem log console"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M4 5h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" />
+            </svg>
+            Log
+          </button>
+
           <div className="container mx-auto px-4 py-8">
             {loading && recommendations.length === 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -426,6 +448,7 @@ export default function Home() {
           {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
           {showChat && <ChatModal onClose={() => setShowChat(false)} />}
           {showMyProfileModal && <MyProfileModal onClose={() => setShowMyProfileModal(false)} />}
+          {showLog && <LogModal onClose={() => setShowLog(false)} />}
         </div>
       </div>
     </>
