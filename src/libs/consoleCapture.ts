@@ -74,7 +74,9 @@ function formatArgs(args: unknown[]) {
 
 export function subscribeConsoleEntries(listener: Listener) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 export function getConsoleEntries() {

@@ -4,9 +4,12 @@ import { getTinderHeaders } from '@/libs/tinderHeaders';
 import fs from 'fs';
 import path from 'path';
 
-export async function GET(request: NextRequest, { params }: { params: { matchId: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ matchId: string }> }
+) {
   try {
-    const { matchId } = params;
+    const { matchId } = await context.params;
     if (!matchId) {
       return NextResponse.json({ success: false, message: 'Missing matchId' }, { status: 400 });
     }
